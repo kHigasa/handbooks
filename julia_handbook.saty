@@ -1,0 +1,18 @@
+@require: stdjareport
+@require: itemize
+@require: math
+@import: ./local
+
+document (|
+    title = {Julia Handbook};
+    author = {Koji Higasa};
+|) '<
+    +p{
+      \code(`answer`);. 
+    }
+    +code(`
+      def answer
+        42
+      end
+    `);
+>

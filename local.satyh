@@ -1,0 +1,92 @@
+@require: math
+@require: hdecoset
+
+let-mutable needs-indentation-ref <- true
+let-block ctx +pn inner =
+    let () = needs-indentation-ref <- true in
+    let ib-inner = read-inline ctx inner in
+      form-paragraph ctx (ib-inner ++ inline-fil)
+
+let-inline ctx \simple-frame it =
+  let pads = (2pt, 2pt, 2pt, 2pt) in
+  let decos = HDecoSet.simple-frame-stroke 1pt (Gray(0.5)) in
+    inline-frame-breakable pads decos (read-inline ctx it)
+
+let-math \varphi = math-char MathOrd (string-unexplode [966])
+let-math \dagger = math-char MathOrd (string-unexplode [8224])
+let-math \hbar = math-char MathOrd (string-unexplode [8463])
+let-math \leftrightarrow = math-char MathOrd (string-unexplode [8596])
+let-math \tilde = math-char MathOrd (string-unexplode [8764])
+
+let-math \orighbar =
+  let bar ctx =
+    let ib = embed-math ctx ${h} in
+    let (w, h, d) = get-natural-metrics ib in
+    let thickness = 0.35pt in
+    let color = Color.black in
+    inline-graphics w h d (fun (x, y) ->
+    [
+      stroke thickness color
+        (start-path (x +' w *' 0.07, y +' h *' 0.82) 
+          |> line-to (x +' w *' 0.07, y +' h *' 0.82) 
+          |> terminate-path);
+      draw-text (x, y) ib
+    ])
+    in
+    text-in-math MathOrd bar
+
+let-math \hat inner = 
+  let hat ctx = 
+    let ib = embed-math ctx inner in
+    let (w, h, d) = get-natural-metrics ib in
+    let thickness = 0.4pt in
+    let color = Color.black in
+    inline-graphics w h d (fun (x, y) -> 
+    [
+      stroke thickness color
+        (start-path (x +' w *' 0.35, y +' h *' 1.2)
+          |> line-to (x +' w *' 0.6, y +' h *' 1.4)
+          |> line-to (x +' w *' 0.85, y +' h *' 1.2)
+          |> terminate-path);
+      draw-text (x, y) ib
+    ])
+  in
+  text-in-math MathOp hat
+
+let-mutable num-chapter <- 0
+let-mutable num-eqn <- 0
+
+let eqn-scheme ctx labelopt =
+  let () = num-eqn <- !num-eqn + 1 in
+  let s-num = arabic !num-chapter ^ `.` ^ arabic !num-eqn in
+  let () =
+    match labelopt with
+    | Some(label) -> register-cross-reference (`eqn:` ^ label ^ `:num`) s-num
+    | None        -> ()
+  in
+    let it-num = embed-string (`(` ^ s-num ^ `)`) in
+    it-num
+
+let-inline ctx \eqn-num ?:labelopt inner =
+  let num = eqn-scheme ctx labelopt in
+  read-inline ctx {\eqn ?:(num) (inner);}
+
+let-inline ctx \insert-image w path =
+  let img = load-image path in
+    use-image-by-width img w
+
+let-inline ctx \insert-pdf-image w path =
+  let img = load-pdf-image path 1 in
+    use-image-by-width img w
+
+let-block ctx +image w path =
+    let image = load-image path in
+    let insert-image = use-image-by-width image w in
+        line-break true true ctx (inline-fil ++ insert-image ++ inline-fil)
+
+let-block ctx +pdf n w path =
+    let image = load-pdf-image path n in
+    let insert-image = use-image-by-width image w in
+        line-break true true ctx (inline-fil ++ insert-image ++ inline-fil)
+
+let-block ctx +clear-page _ = clear-page
